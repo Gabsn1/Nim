@@ -56,8 +56,9 @@ class NimAI():
         float: The Q-value associated with the (state, action) pair. 
                Returns 0 if the pair is not yet in the Q-table.
     """
-        print(self.q)
-
+        
+        return self.q.get((tuple(state), action), 0)
+        
     def update_q_value(self, state, action, old_q, reward, future_q):
         """
     Update the Q-value for a state-action pair using the Q-learning formula.
@@ -69,20 +70,30 @@ class NimAI():
         reward (float): The reward received after taking the action.
         future_q (float): The maximum Q-value for the next state.
     """
-        raise NotImplementedError
+        self.q[(tuple(state), action)] = old_q + self.alpha * (reward + future_q - old_q)
     
     def best_future_reward(self, state):
-            """
-    Determine the highest Q-value among all possible actions in a given state.
-    
-    Parameters:
-        state (list): The state for which to compute the best future reward.
-        
-    Returns:
-        float: The highest Q-value among available actions. 
-               Returns 0 if no actions are available.
-    """
-            raise NotImplementedError
+        """
+        Determine the highest Q-value among all possible actions in a given state.
+
+        Parameters:
+            state (list): The state for which to compute the best future reward.
+
+        Returns:
+            float: The highest Q-value among available actions.
+                   Returns 0 if no actions are available.
+        """
+        actions = Nim.available_actions(list(state))
+        if not actions:
+            return 0
+
+        best_v = 0
+        state_tuple = tuple(state)
+        for (s, a), value in self.q.items():
+            if s == state_tuple and value > best_v:
+                best_v = value
+
+        return best_v
 
     def choose_action(self, state, epsilon=True):
         """
@@ -95,8 +106,26 @@ class NimAI():
     Returns:
         tuple: The chosen action from the available actions.
     """
-        raise NotImplementedError
+        
+        actions = Nim.available_actions(state)
+        if not actions:
+            return None
 
+        if epsilon and random.random() < self.epsilon:
+            return random.choice(list(actions))
+
+        best_v = float('-inf')
+        best_actions = []
+        for action in actions:
+            q_value = self.get_q_value(state, action)
+            if q_value > best_v:
+                best_v = q_value
+                best_actions = [action]
+            elif q_value == best_v:
+                best_actions.append(action)
+
+        return random.choice(best_actions)
+    
 def train(n):
     player = NimAI()
 
